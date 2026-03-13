@@ -1,32 +1,33 @@
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
-  const session = req.auth;
 
   if (pathname === "/login") {
-    if (session) {
-      const redirect = session.user.role === "OWNER" ? "/owner/dashboard" : "/mechanic/dashboard";
+    if (token) {
+      const redirect = token.role === "OWNER" ? "/owner/dashboard" : "/mechanic/dashboard";
       return NextResponse.redirect(new URL(redirect, req.url));
     }
     return NextResponse.next();
   }
 
-  if (!session) {
+  if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (pathname.startsWith("/owner") && session.user.role !== "OWNER") {
+  if (pathname.startsWith("/owner") && token.role !== "OWNER") {
     return NextResponse.redirect(new URL("/mechanic/dashboard", req.url));
   }
 
-  if (pathname.startsWith("/mechanic") && session.user.role !== "MECHANIC") {
+  if (pathname.startsWith("/mechanic") && token.role !== "MECHANIC") {
     return NextResponse.redirect(new URL("/owner/dashboard", req.url));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/owner/:path*", "/mechanic/:path*", "/login"],
