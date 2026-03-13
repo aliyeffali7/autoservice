@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  surname   String
+  phone     String   @unique
+  password  String
+  role      String   @default("MECHANIC")
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  carBrand        String
+  carModel        String
+  carPlate        String
+  description     String?
+  status          String         @default("NOT_STARTED")
+  paymentStatus   String         @default("PENDING")
+  customerName    String?
+  customerSurname String?
+  customerPhone   String?
+  mechanic        User           @relation(fields: [mechanicId], references: [id])
+  mechanicId      String
+  tasks           Task[]
+  products        OrderProduct[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Task {
+  id          String @id @default(cuid())
+  description String
+  price       Float
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  name              String
+  quantity          Int            @default(0)
+  purchasePrice     Float
+  sellPrice         Float
+  lowStockThreshold Int            @default(5)
+  createdAt         DateTime       @default(now())
+  orderProducts     OrderProduct[]
+}
+
+model OrderProduct {
+  id          String  @id @default(cuid())
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  product     Product @relation(fields: [productId], references: [id])
+  productId   String
+  quantity    Int
+  priceAtTime Float
+}
